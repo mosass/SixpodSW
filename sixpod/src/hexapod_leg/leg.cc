@@ -9,6 +9,7 @@
 #include "leg_type.h"
 #include "math.h"
 #include "joint_controls.h"
+#include "platform.h"
 
 #include "leg.h"
 
@@ -91,10 +92,16 @@ void Leg::setup(int Id = 0, float z_off = INITIAL_FOOTTIP_Z_OFF){
 }
 
 void Leg::move(bool skipSetSpeed = false){
+	this->moveA(skipSetSpeed);
+	this->moveB(skipSetSpeed);
+	this->moveC(skipSetSpeed);
+
+	return;
+}
+
+void Leg::moveA(bool skipSetSpeed = false){
 	if(!skipSetSpeed){
 		JointSetMovingSpeedDeg(this->jointIdA, this->linkSpeed.a);
-		JointSetMovingSpeedDeg(this->jointIdB, this->linkSpeed.b);
-		JointSetMovingSpeedDeg(this->jointIdC, this->linkSpeed.c);
 	}
 
 	if(this->invA)
@@ -102,10 +109,26 @@ void Leg::move(bool skipSetSpeed = false){
 	else
 		JointSetGoalPositionDeg(this->jointIdA, this->linkPos.a);
 
+	return;
+}
+
+void Leg::moveB(bool skipSetSpeed = false){
+	if(!skipSetSpeed){
+		JointSetMovingSpeedDeg(this->jointIdB, this->linkSpeed.b);
+	}
+
 	if(this->invB)
 		JointSetGoalPositionDeg(this->jointIdB, 300.0f - this->linkPos.b);
 	else
 		JointSetGoalPositionDeg(this->jointIdB, this->linkPos.b);
+
+	return;
+}
+
+void Leg::moveC(bool skipSetSpeed = false){
+	if(!skipSetSpeed){
+		JointSetMovingSpeedDeg(this->jointIdC, this->linkSpeed.c);
+	}
 
 	if(this->invC)
 		JointSetGoalPositionDeg(this->jointIdC, 300.0f - this->linkPos.c);
@@ -143,11 +166,59 @@ Link3d Leg::getPresentPosition(){
 }
 
 void Leg::moveTo(FootTip& targetFootTipPos, float in_sec){
-	Link3d currentJointPos = this->linkPos;
+	Link3d currentJointPos = this->getPresentPosition();//this->linkPos;
 	this->footTipPos = targetFootTipPos;
 	this->linkPos = this->calcIk();
 	this->linkSpeed = this->linkPos.diff(currentJointPos) / in_sec;
 	this->move();
+	return;
+}
+
+void Leg::moveToSync(FootTip& targetFootTipPos, float in_sec){
+	Link3d currentJointPos = this->getPresentPosition();//this->linkPos;
+	this->footTipPos = targetFootTipPos;
+	this->linkPos = this->calcIk();
+	this->linkSpeed = this->linkPos.diff(currentJointPos) / in_sec;
+	this->move();
+
+	TickType_t wait = pdMS_TO_TICKS( in_sec * 1000 );
+	vTaskDelay( wait );
+	return;
+}
+
+void Leg::gaitTo(FootTip& targetFootTipPos, float in_sec){
+	Link3d currentJointPos = this->getPresentPosition();//this->linkPos;
+	this->footTipPos = targetFootTipPos;
+	this->linkPos = this->calcIk();
+	this->linkSpeed = this->linkPos.diff(currentJointPos) / in_sec;
+
+	float target_b = this->linkPos.b;
+	float target_c = this->linkPos.c;
+	float tmp_b = target_b;
+	float tmp_c = target_c - 30.0;
+	if(tmp_b < currentJointPos.b)
+		tmp_b = currentJointPos.b;
+	tmp_b += 30.0;
+
+	this->linkPos.b = tmp_b;
+	this->linkSpeed.b = (tmp_b - currentJointPos.b) / (in_sec / 2.0);
+	this->linkPos.c = tmp_c;
+	this->linkSpeed.c = (tmp_c - currentJointPos.c) / (in_sec / 2.0);
+
+	TickType_t wait = pdMS_TO_TICKS( (in_sec / 2.0) * 1000 );
+
+	this->moveB();
+	this->moveC();
+	this->moveA();
+	vTaskDelay( wait );
+
+	this->linkPos.b = target_b;
+	this->linkPos.c = target_c;
+	this->moveB();
+	this->moveC();
+
+	vTaskDelay( wait );
+
 	return;
 }
 
@@ -171,8 +242,3 @@ Link3d Leg::calcIk(){
 
 	return result;
 }
-
-
-
-
-

@@ -20,8 +20,6 @@ private:
 	Link3d	linkPos;
 	Link3d	linkSpeed;
 
-	Link3d calcIk();
-	void move(bool skipSetSpeed);
 public:
 	uint8_t id;
 	float zOffset;
@@ -35,7 +33,14 @@ public:
 	void setup(int Id, float z_off);
 	void setGoalPosition(FootTip& targetFootTipPos);
 	Link3d getPresentPosition();
+	Link3d calcIk();
+	void move(bool skipSetSpeed);
 	void moveTo(FootTip& targetFootTipPos, float in_sec);
+	void moveToSync(FootTip& targetFootTipPos, float in_sec);
+	void moveA(bool skipSetSpeed);
+	void moveB(bool skipSetSpeed);
+	void moveC(bool skipSetSpeed);
+	void gaitTo(FootTip& targetFootTipPos, float in_sec);
 };
 
 #endif /* SRC_HEXAPOD_LEG_LEG_H_ */

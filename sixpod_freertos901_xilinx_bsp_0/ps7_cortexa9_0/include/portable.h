@@ -199,6 +199,8 @@ void vPortEndScheduler( void ) PRIVILEGED_FUNCTION;
 	void vPortStoreTaskMPUSettings( xMPU_SETTINGS *xMPUSettings, const struct xMEMORY_REGION * const xRegions, StackType_t *pxBottomOfStack, uint32_t ulStackDepth ) PRIVILEGED_FUNCTION;
 #endif
 
+	void * prvGetInterruptControllerInstance ();
+
 #ifdef __cplusplus
 }
 #endif

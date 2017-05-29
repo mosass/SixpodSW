@@ -6,6 +6,7 @@
  */
 
 #include "leg_type.h"
+#include "platform.h"
 
 #ifndef SRC_HEXAPOD_LEG_LEG_H_
 #define SRC_HEXAPOD_LEG_LEG_H_
@@ -40,7 +41,7 @@ public:
 	void moveA(bool skipSetSpeed);
 	void moveB(bool skipSetSpeed);
 	void moveC(bool skipSetSpeed);
-	void gaitTo(FootTip& targetFootTipPos, float in_sec);
+	void gaitTo(FootTip& targetFootTipPos, float in_sec, TaskHandle_t notifyTask);
 };
 
 #endif /* SRC_HEXAPOD_LEG_LEG_H_ */

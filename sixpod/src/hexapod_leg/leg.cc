@@ -166,7 +166,7 @@ Link3d Leg::getPresentPosition(){
 }
 
 void Leg::moveTo(FootTip& targetFootTipPos, float in_sec){
-	Link3d currentJointPos = this->getPresentPosition();//this->linkPos;
+	Link3d currentJointPos = this->linkPos;
 	this->footTipPos = targetFootTipPos;
 	this->linkPos = this->calcIk();
 	this->linkSpeed = this->linkPos.diff(currentJointPos) / in_sec;
@@ -175,19 +175,19 @@ void Leg::moveTo(FootTip& targetFootTipPos, float in_sec){
 }
 
 void Leg::moveToSync(FootTip& targetFootTipPos, float in_sec){
-	Link3d currentJointPos = this->getPresentPosition();//this->linkPos;
+	Link3d currentJointPos = this->linkPos;
 	this->footTipPos = targetFootTipPos;
 	this->linkPos = this->calcIk();
 	this->linkSpeed = this->linkPos.diff(currentJointPos) / in_sec;
 	this->move();
 
-	TickType_t wait = pdMS_TO_TICKS( in_sec * 1000 );
+	TickType_t wait = pdMS_TO_TICKS( (in_sec ) * 1000 );
 	vTaskDelay( wait );
 	return;
 }
 
-void Leg::gaitTo(FootTip& targetFootTipPos, float in_sec){
-	Link3d currentJointPos = this->getPresentPosition();//this->linkPos;
+void Leg::gaitTo(FootTip& targetFootTipPos, float in_sec, TaskHandle_t notifyTask){
+	Link3d currentJointPos = this->linkPos;
 	this->footTipPos = targetFootTipPos;
 	this->linkPos = this->calcIk();
 	this->linkSpeed = this->linkPos.diff(currentJointPos) / in_sec;
@@ -211,13 +211,17 @@ void Leg::gaitTo(FootTip& targetFootTipPos, float in_sec){
 	this->moveC();
 	this->moveA();
 	vTaskDelay( wait );
+	xTaskNotifyGive(notifyTask);
 
 	this->linkPos.b = target_b;
+//	this->linkSpeed.b = (target_b - tmp_b) / (in_sec / 2.0);
 	this->linkPos.c = target_c;
+//	this->linkSpeed.c = (tmp_c - target_c) / (in_sec / 2.0);
 	this->moveB();
 	this->moveC();
 
 	vTaskDelay( wait );
+	xTaskNotifyGive(notifyTask);
 
 	return;
 }

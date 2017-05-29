@@ -9,13 +9,19 @@
 /* Module includes */
 #include "hexapod.h"
 
-static QueueHandle_t xTrajQueue[6];
+static QueueHandle_t xPostureQueue[6];
 static TaskHandle_t xInitTask;
-static TaskHandle_t xMovingTask;
 static TaskHandle_t xWalkingTask;
 static TaskHandle_t xLegGait[6];
 
-HEXAPOD HexapodRobot;
+static const char * taskName[6] = {
+		"Leg1Gait",
+		"Leg2Gait",
+		"Leg3Gait",
+		"Leg4Gait",
+		"Leg5Gait",
+		"Leg6Gait"
+};
 
 /* Task function */
 #include "networkTaskFunction.h"
@@ -28,7 +34,7 @@ int main (void) {
 	BaseType_t status;
 
 	for(int i = 0; i < 6; i++){
-		xTrajQueue[i] = xQueueCreate( 20, sizeof( Trajectory3d ));
+		xPostureQueue[i] = xQueueCreate( 10, sizeof( int ));
 	}
 
 	status = xTaskCreate( init, 			/* The function that implements the task. */
@@ -67,38 +73,11 @@ static void init( void *pvParameters ) {
 	vTaskDelay( st );
 	xil_printf("Initialed Network\r\n");
 
-	status = xTaskCreate( hexapodMovingTask,
-				 ( const char * ) "Moving",
-				 configMINIMAL_STACK_SIZE,
-				 NULL,
-				 DEFAULT_THREAD_PRIO,
-				 &xMovingTask );
-
-	if(status != pdPASS){
-		xil_printf("Can not create Moving task.\r\n");
-	}
-
-	const char * taskName[6] = {
-			"Leg1Gait",
-			"Leg2Gait",
-			"Leg3Gait",
-			"Leg4Gait",
-			"Leg5Gait",
-			"Leg6Gait"
-	};
-
-	for(int i = 0; i < 6; i++){
-		xQueueReset(xTrajQueue[i]);
-		xTaskCreate( hexapodLegGaitTask,
-					taskName[i], configMINIMAL_STACK_SIZE,
-					(void *) i, DEFAULT_THREAD_PRIO, &xLegGait[i] );
-	}
-
 	status = xTaskCreate( hexapodWalkingTask,
 				 ( const char * ) "Walking",
 				 configMINIMAL_STACK_SIZE,
 				 NULL,
-				 DEFAULT_THREAD_PRIO + 1,
+				 DEFAULT_THREAD_PRIO + 2,
 				 &xWalkingTask );
 
 	if(status != pdPASS){

@@ -15,13 +15,6 @@
 #include "hexapod_config.h"
 #include "imu.h"
 
-typedef struct trajectory3d {
-	float x;
-	float y;
-	float z;
-	float duration;
-} Trajectory3d;
-
 class HEXAPOD {
 private:
 

@@ -10,6 +10,23 @@
 
 #include "math.h"
 
+typedef struct trajectory3d {
+	float x;
+	float y;
+	float z;
+	float duration;
+} Trajectory3d;
+
+typedef struct walkingposture {
+	int LegId;
+	float Ux;
+	float Uy;
+	float Uz;
+	float Vx;
+	float Vy;
+	float Vz;
+} Posture;
+
 class Rot3d {
 public:
 	float y;

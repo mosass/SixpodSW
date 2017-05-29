@@ -80,8 +80,8 @@
 #define INITIAL_ROT_P			(float)0
 #define INITIAL_ROT_R			(float)0
 
-#define INITIAL_STEP_TIME		(float)5	// sec
-#define INITIAL_DT				(float)0.2 	// sec
+#define INITIAL_STEP_TIME		(float)3.0	// sec
+#define INITIAL_DT				(float)0.5 	// sec
 
 #define ALLOW_ROT_ERROR 		(float)1 	// +-deg
 #define SETUP_TIME				(float)2   // sec

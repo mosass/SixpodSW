@@ -8,7 +8,10 @@
 #ifndef SRC_TASKFUNCTION_H_
 #define SRC_TASKFUNCTION_H_
 
-TickType_t stepTime;
+static int U = 1;
+static const int V = 300;
+
+static volatile float stepTime;
 
 void prinfloat(float fval){
 	int whole = fval;
@@ -19,135 +22,313 @@ void prinfloat(float fval){
 
 static void hexapodWalkingTask( void * );
 static void hexapodLegGaitTask( void * );
-static void hexapodMovingTask( void * );
 
-static void hexapodMovingTask( void *pvParameters ){
-	TickType_t dt;
-	for(;;){
-		dt = pdMS_TO_TICKS( Hexapod.dt * 1000 );
-		if(Hexapod.readIMU()){
-			if(Hexapod.improvePitch || Hexapod.improveRoll || Hexapod.improveYaw){
-				// balance mode
-				if(Hexapod.balance()){
-					xil_printf("B\r\n");
-//					Hexapod.updateGoalPosition();
-				}
-			}
-			vTaskDelay( dt );
+static void sendTripodGait(bool first = false){
+	if(first){
+		U = 5;
+		xQueueSend(xPostureQueue[1], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &U, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+	}
+	else {
+		U = 5;
+		xQueueSend(xPostureQueue[0], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &U, 0UL);
+
+		for(int i = 0; i < 5; i++){
+			xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+			xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+			xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+		}
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		U = 5;
+		xQueueSend(xPostureQueue[1], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &U, 0UL);
+
+		for(int i = 0; i < 5; i++){
+			xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+			xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+			xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+		}
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+	}
+}
+
+static void sendWaveGait(bool first = false){
+	if(first){
+		U = 1;
+		xQueueSend(xPostureQueue[1], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &U, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+//		xQueueSend(xPostureQueue[0], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &U, 0UL);
+
+//		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+//		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+	}
+	else {
+		U = 1;
+		xQueueSend(xPostureQueue[0], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &U, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+	}
+}
+
+static void sendRippleGait(bool first = false, bool last = false){
+	if(first){
+		U = 1;
+		xQueueSend(xPostureQueue[1], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &U, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+//		xQueueSend(xPostureQueue[0], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &U, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+//		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+//		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		U = 2;
+		xQueueSend(xPostureQueue[0], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+	}
+	else {
+		U = 2;
+
+		xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		xQueueSend(xPostureQueue[0], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &U, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		xQueueSend(xPostureQueue[0], (void *) &U, 0UL);
+		xQueueSend(xPostureQueue[5], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[1], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[3], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[2], (void *) &V, 0UL);
+		xQueueSend(xPostureQueue[4], (void *) &V, 0UL);
+
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+
+		if(last){
+			ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
 		}
 	}
 }
 
 static void hexapodWalkingTask( void *pvParameters ){
-	for(;;){
-		TickType_t dt = pdMS_TO_TICKS( Hexapod.stepTime * 1000 );
-		vTaskDelay( dt );
+	Posture walkPosture[6] = {
+			{1, 5, 12, 0, -2, 0, 0},
+			{2, 5, 12, 0, -2, 0, 0},
+			{3, 5, 12, 0, -2, 0, 0},
+			{4, 5, 12, 0, -2, 0, 0},
+			{5, 5, 12, 0, -2, 0, 0},
+			{6, 5, 12, 0, -2, 0, 0}
+	};
+
+	for(int i = 0; i < 6; i++){
+		xQueueReset(xPostureQueue[i]);
+
+		xTaskCreate( hexapodLegGaitTask,
+					taskName[i], configMINIMAL_STACK_SIZE,
+					(void *) &walkPosture[i], DEFAULT_THREAD_PRIO + 1, &xLegGait[i] );
 	}
 
-	Trajectory3d tp1 = {-5, 14.0, 0, 0.5};
-	Trajectory3d tp2 = {0, 14.0, 4, 0.25};
-	Trajectory3d tp4 = {5, 14.0, 0, 0.25};
-
-	Trajectory3d tpf1 = {-5, 14.0, 0, 0.5};
-	Trajectory3d tpf4 = {5, 14.0, 0, 0.5};
-
-	Hexapod.stepTime = 4;
-	Hexapod.dt = 0.5;
-//	Hexapod.bodyRotTarget.p = Rot3d::toReg(5.0);
-	Hexapod.improvePitch = true;
-	Hexapod.improveRoll = true;
-	Hexapod.improveYaw = true;
-
-	xQueueSend(xTrajQueue[0], (void *)&tpf1, 0UL);
-	xQueueSend(xTrajQueue[2], (void *)&tpf1, 0UL);
-	xQueueSend(xTrajQueue[4], (void *)&tpf1, 0UL);
-
-	xQueueSend(xTrajQueue[1], (void *)&tpf4, 0UL);
-	xQueueSend(xTrajQueue[3], (void *)&tpf4, 0UL);
-	xQueueSend(xTrajQueue[5], (void *)&tpf4, 0UL);
-
-	stepTime = pdMS_TO_TICKS( Hexapod.stepTime * 1000 );
-	vTaskDelay( stepTime );
+	stepTime = Hexapod.dt;
 
 	for( ;; ){
-		xil_printf("Gait\r\n");
+		xil_printf("Tripod Gait\r\n");
+		sendTripodGait(true);
+		for(int i = 0; i < 3; i++){
+			sendTripodGait();
+		}
 
-		xQueueSend(xTrajQueue[0], (void *)&tp2, 0UL);
-		xQueueSend(xTrajQueue[2], (void *)&tp2, 0UL);
-		xQueueSend(xTrajQueue[4], (void *)&tp2, 0UL);
+		xil_printf("Wave Gaited\r\n");
+		sendWaveGait(true);
+		for(int i = 0; i < 3; i++){
+			sendWaveGait();
+		}
 
-		xQueueSend(xTrajQueue[0], (void *)&tp4, 0UL);
-		xQueueSend(xTrajQueue[2], (void *)&tp4, 0UL);
-		xQueueSend(xTrajQueue[4], (void *)&tp4, 0UL);
-
-		xQueueSend(xTrajQueue[1], (void *)&tp1, 0UL);
-		xQueueSend(xTrajQueue[3], (void *)&tp1, 0UL);
-		xQueueSend(xTrajQueue[5], (void *)&tp1, 0UL);
-
-		ulTaskNotifyTake( pdFALSE, portMAX_DELAY );
-		ulTaskNotifyTake( pdFALSE, portMAX_DELAY );
-		ulTaskNotifyTake( pdFALSE, portMAX_DELAY );
-
-		xQueueSend(xTrajQueue[0], (void *)&tp1, 0UL);
-		xQueueSend(xTrajQueue[2], (void *)&tp1, 0UL);
-		xQueueSend(xTrajQueue[4], (void *)&tp1, 0UL);
-
-		xQueueSend(xTrajQueue[1], (void *)&tp2, 0UL);
-		xQueueSend(xTrajQueue[3], (void *)&tp2, 0UL);
-		xQueueSend(xTrajQueue[5], (void *)&tp2, 0UL);
-
-		xQueueSend(xTrajQueue[1], (void *)&tp4, 0UL);
-		xQueueSend(xTrajQueue[3], (void *)&tp4, 0UL);
-		xQueueSend(xTrajQueue[5], (void *)&tp4, 0UL);
-
-		ulTaskNotifyTake( pdFALSE, portMAX_DELAY );
-		ulTaskNotifyTake( pdFALSE, portMAX_DELAY );
-		ulTaskNotifyTake( pdFALSE, portMAX_DELAY );
-
-		xil_printf("Gaited\r\n");
+		xil_printf("Ripple Gaited\r\n");
+		sendRippleGait(true);
+		for(int i = 0; i < 2; i++){
+			sendRippleGait();
+		}
+		sendRippleGait(false, true);
 	}
 }
 
-//static void hexapodLegGaitTask( void *pvParameters ){
-//
-//}
-
 static void hexapodLegGaitTask( void *pvParameters ){
-	int id = (uint32_t) pvParameters;
-	int legId = id + 1;
-	bool footDown = false;
+	Posture* posture = (Posture*) pvParameters;
+	int id = posture->LegId - 1;
+	FootTip Upoint(posture->Ux, posture->Uy, posture->Uz);
+	FootTip Vpoint(posture->Vx, posture->Vy, posture->Vz);
+
+	int state;
 
 	for(;;){
-		Trajectory3d targetPos, oldTargetPos;
+		xQueueReceive(xPostureQueue[id], (void*) &state, portMAX_DELAY);
 
-		/* Wait without a timeout for data. */
-		xQueueReceive(xTrajQueue[id], (void *) &targetPos, portMAX_DELAY );
-		if(oldTargetPos.z > 0.0 && targetPos.z <= 0.0){
-			footDown = true;
+		if(state == V){
+			Hexapod.footTip[id] = Hexapod.footTip[id] + Vpoint;
+			Hexapod.leg[id].moveToSync(Hexapod.footTip[id], stepTime);
 		}
-		oldTargetPos = targetPos;
-
-//		FootTip new_pos =
-//
-//		FootTip new_pos(targetPos.x, targetPos.y, targetPos.z);
-		Hexapod.targetFootTip[id] = Hexapod.applyRotToGait(legId, targetPos);
-
-		Hexapod.footTip[id] = Hexapod.targetFootTip[id];
-
-		xil_printf("L%d{%d %d %d}\r\n", id, (int) roundf(Hexapod.footTip[id].x),
-							(int) roundf(Hexapod.footTip[id].y),
-							(int) roundf(Hexapod.footTip[id].z));
-
-		float time = Hexapod.stepTime * targetPos.duration;
-		Hexapod.leg[id].moveTo(Hexapod.footTip[id], time);
-
-		TickType_t wait = pdMS_TO_TICKS( time * 1000 );
-		vTaskDelay( wait );
-
-		if(footDown){
-			footDown = false;
-			xTaskNotifyGive(xWalkingTask);
-			xil_printf("L%d Down\r\n", id);
+		else {
+			Hexapod.footTip[id] = Upoint;
+			Hexapod.leg[id].gaitTo(Upoint, stepTime * state, xWalkingTask);
 		}
 	}
 }

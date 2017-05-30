@@ -39,7 +39,7 @@ HEXAPOD::HEXAPOD(){
 	this->stepTime = INITIAL_STEP_TIME;
 	this->dt = INITIAL_DT;
 
-	this->improveYaw = true;
+	this->improveYaw = false;
 	this->improvePitch = true;
 	this->improveRoll = true;
 }
@@ -54,14 +54,15 @@ void HEXAPOD::begin(){
 	sleep(3);
 	for(int cntloop = 0; cntloop < 2000; ){
 		while (!Imu.available());
-		xil_printf(".");
+//		xil_printf(".");
 		if(cntloop % 100 == 0)
-			xil_printf("\r\n");
+			xil_printf(".");
 		status = Imu.readFifoBuffer();
 		if (status == XST_SUCCESS) {
 			cntloop++;
 		}
 	}
+	xil_printf("\r\n");
 	bodyRotOffset.y = Imu.euler[0];
 	bodyRotOffset.p = Imu.euler[1];
 	bodyRotOffset.r = Imu.euler[2];
@@ -285,7 +286,8 @@ FootTip HEXAPOD::applyRotToGait(int legId, Trajectory3d& traj){
 
 void HEXAPOD::updateGoalPosition(){
 	for(int i = 0; i < 6; i++){
-		this->leg[i].setGoalPosition(this->footTip[i]);
+		if(this->targetFootTip[i].z == 0)
+			this->leg[i].setGoalPosition(this->footTip[i]);
 	}
 }
 

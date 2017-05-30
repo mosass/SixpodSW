@@ -187,39 +187,48 @@ void Leg::moveToSync(FootTip& targetFootTipPos, float in_sec){
 }
 
 void Leg::gaitTo(FootTip& targetFootTipPos, float in_sec, TaskHandle_t notifyTask){
+	FootTip target = targetFootTipPos;
+	FootTip currentFootTipPos = this->footTipPos;
 	Link3d currentJointPos = this->linkPos;
-	this->footTipPos = targetFootTipPos;
-	this->linkPos = this->calcIk();
-	this->linkSpeed = this->linkPos.diff(currentJointPos) / in_sec;
 
-	float target_b = this->linkPos.b;
-	float target_c = this->linkPos.c;
-	float tmp_b = target_b;
-	float tmp_c = target_c - 30.0;
-	if(tmp_b < currentJointPos.b)
-		tmp_b = currentJointPos.b;
-	tmp_b += 30.0;
+	FootTip midFootipPos = (target + currentFootTipPos) / 2.0;
 
-	this->linkPos.b = tmp_b;
-	this->linkSpeed.b = (tmp_b - currentJointPos.b) / (in_sec / 2.0);
-	this->linkPos.c = tmp_c;
-	this->linkSpeed.c = (tmp_c - currentJointPos.c) / (in_sec / 2.0);
+	this->footTipPos = target;
+	Link3d targetJointPos = this->calcIk();
 
-	TickType_t wait = pdMS_TO_TICKS( (in_sec / 2.0) * 1000 );
+	midFootipPos.z += 3.0;
+	this->footTipPos = midFootipPos;
+	Link3d midJointPos = this->calcIk();
+
+	Link3d s_a = targetJointPos.diff(currentJointPos) / in_sec;
+	Link3d s_bc = midJointPos.diff(currentJointPos) / (in_sec / 2.0);
+
+	this->linkSpeed.a = s_a.a;
+	this->linkSpeed.b = s_bc.b;
+	this->linkSpeed.b = s_bc.c;
+	this->linkPos.a = targetJointPos.a;
+	this->linkPos.b = midJointPos.b;
+	this->linkPos.c = midJointPos.c;
+
+	TickType_t wait = pdMS_TO_TICKS( (in_sec / 2.0) * 1000.0 );
 
 	this->moveB();
 	this->moveC();
 	this->moveA();
+//	xil_printf("UP\r\n");
 	vTaskDelay( wait );
-	xTaskNotifyGive(notifyTask);
 
-	this->linkPos.b = target_b;
-//	this->linkSpeed.b = (target_b - tmp_b) / (in_sec / 2.0);
-	this->linkPos.c = target_c;
-//	this->linkSpeed.c = (tmp_c - target_c) / (in_sec / 2.0);
+	s_bc = targetJointPos.diff(midJointPos) / (in_sec / 2.0);
+	this->linkSpeed.b = s_bc.b;
+	this->linkSpeed.b = s_bc.c;
+	this->linkPos.b = targetJointPos.b;
+	this->linkPos.c = targetJointPos.c;
+	this->footTipPos = target;
 	this->moveB();
 	this->moveC();
 
+	xTaskNotifyGive(notifyTask);
+//	xil_printf("DOWN\r\n");
 	vTaskDelay( wait );
 	xTaskNotifyGive(notifyTask);
 

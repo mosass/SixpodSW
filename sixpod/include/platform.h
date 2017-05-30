@@ -16,13 +16,20 @@
 /* Xilinx includes. */
 #include "stdint.h"
 #include "stdio.h"
+#include "string.h"
 #include "xil_printf.h"
 #include "xparameters.h"
 #include "sleep.h"
 #include "xstatus.h"
+#include "xgpio.h"
+/* lwIP includes.*/
 #include "netif/xadapter.h"
 #include "lwip/sockets.h"
 #include "lwipopts.h"
+/* fat file system includes.*/
+#include "xsdps.h"		/* SD device driver */
+#include "ff.h"
+#include "xil_cache.h"
 
 /* Config */
 #define USE_FREERTOS 	1

@@ -9,10 +9,20 @@
 /* Module includes */
 #include "hexapod.h"
 
+static XGpio GpioBtnSw;
+static XGpio GpioLed;
+
+#define LED_CH 1
+#define BTN_CH 1
+#define SW_CH  2
+
 static QueueHandle_t xPostureQueue[6];
 static TaskHandle_t xInitTask;
 static TaskHandle_t xWalkingTask;
 static TaskHandle_t xLegGait[6];
+static TaskHandle_t xIMUTask;
+
+static Posture xPosture[6];
 
 static const char * taskName[6] = {
 		"Leg1Gait",
@@ -32,7 +42,30 @@ static void init( void * );
 
 int main (void) {
 	BaseType_t status;
+//-------------------------------
+	status = XGpio_Initialize(&GpioBtnSw, XPAR_GPIO_0_DEVICE_ID);
+	if (status != XST_SUCCESS) {
+		xil_printf("Gpio Initialization Failed\r\n");
+		return XST_FAILURE;
+	}
 
+	status = XGpio_Initialize(&GpioLed, XPAR_GPIO_1_DEVICE_ID);
+	if (status != XST_SUCCESS) {
+		xil_printf("Gpio Initialization Failed\r\n");
+		return XST_FAILURE;
+	}
+
+	/* Set the direction for all signals as inputs except the Btn INPUT */
+	XGpio_SetDataDirection(&GpioBtnSw, SW_CH, 0xFFFFFFFF);
+	XGpio_SetDataDirection(&GpioBtnSw, BTN_CH, 0xFFFFFFFF);
+	XGpio_SetDataDirection(&GpioLed, LED_CH, 0xFFFFFFF0);
+//	while(1){
+//		u32 btn = XGpio_DiscreteRead(&Gpio, 2);
+//		xil_printf("%x\r\n", btn);
+//		sleep(1);
+//	}
+//	return XST_SUCCESS;
+//-------------------------------
 	for(int i = 0; i < 6; i++){
 		xPostureQueue[i] = xQueueCreate( 10, sizeof( int ));
 	}
@@ -55,9 +88,15 @@ int main (void) {
 }
 
 static void init( void *pvParameters ) {
+
+//	vTaskDelete(NULL);
+//-----------------------------------------
 	BaseType_t status;
 
 	xil_printf("Initial\r\n");
+
+	sdMount();	// Mount File System
+	sdGetFileList(); // Update File List
 
 	Hexapod.begin();
 
@@ -73,6 +112,17 @@ static void init( void *pvParameters ) {
 	vTaskDelay( st );
 	xil_printf("Initialed Network\r\n");
 
+	status = xTaskCreate( hexapodIMUTask,
+				 ( const char * ) "IMU",
+				 configMINIMAL_STACK_SIZE,
+				 NULL,
+				 DEFAULT_THREAD_PRIO ,
+				 &xIMUTask );
+
+	if(status != pdPASS){
+		xil_printf("Can not create IMU task.\r\n");
+	}
+
 	status = xTaskCreate( hexapodWalkingTask,
 				 ( const char * ) "Walking",
 				 configMINIMAL_STACK_SIZE,
@@ -86,6 +136,5 @@ static void init( void *pvParameters ) {
 
 	xil_printf("Initialed\r\n");
 	vTaskDelete(NULL);
-	for(;;);
 }
 

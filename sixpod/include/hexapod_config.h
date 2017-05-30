@@ -74,7 +74,7 @@
 #define INITIAL_FOOTTIP_X		(float)0
 #define INITIAL_FOOTTIP_Y		(float)13.1
 #define INITIAL_FOOTTIP_Z		(float)0
-#define INITIAL_FOOTTIP_Z_OFF	(float)7.5
+#define INITIAL_FOOTTIP_Z_OFF	(float)9.0
 
 #define INITIAL_ROT_Y			(float)0
 #define INITIAL_ROT_P			(float)0

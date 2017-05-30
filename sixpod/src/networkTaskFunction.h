@@ -5,16 +5,6 @@
  *      Author: Phanomphon Yotchon
  */
 
-#include <stdio.h>
-#include <string.h>
-//
-#include "lwip/sockets.h"
-#include "netif/xadapter.h"
-#include "lwipopts.h"
-#include "xil_printf.h"
-#include "FreeRTOS.h"
-#include "task.h"
-
 #ifndef SRC_NETWORKTASKFUNCTION_H_
 #define SRC_NETWORKTASKFUNCTION_H_
 
@@ -26,9 +16,114 @@ u16_t logs_server_port = 9001;
 static struct netif server_netif;
 struct netif *echo_netif;
 
+static void process_request(void *p);
+static void process_logs_request(void *p);
+
+static void remote_application_thread(void *p);
+static void logs_application_thread(void *p);
+static void network_thread(void *p);
+
+// FS Function
+static const TCHAR *FSPath = "0:/";
+static FIL fil;		/* File object */
+static FATFS fatfs;
+static char fileNameLst[512];
+static uint fileCount = 0;
+
+static int sdMount(){
+	FRESULT Res;
+	Res = f_mount(&fatfs, FSPath, 0);
+	if (Res == FR_OK) {
+		return XST_SUCCESS;
+	}
+	return XST_FAILURE;
+}
+
+static void sdGetFileList(){
+	FRESULT Res;
+	DIR dir;
+	FILINFO fno;
+
+	uint idx = 0;
+
+	Res = f_opendir(&dir, FSPath);
+	if (Res == FR_OK) {
+		for(;;){
+			Res = f_readdir(&dir, &fno);
+			if (Res != FR_OK || fno.fname[0] == 0) break;
+			if (!(fno.fattrib & AM_DIR)){
+				fileCount++;
+				idx = strlen(fileNameLst);
+				sprintf(&fileNameLst[idx], "%s,", fno.fname);
+//				xil_printf("%s\t%d\n", fno.fname, fno.fsize);
+			}
+		}
+		idx = strlen(fileNameLst) - 1;
+		fileNameLst[idx] = '\0';
+//		xil_printf("%s\n", fileNameLst);
+	}
+}
+
+static int sdGetFilename(TCHAR *fName, uint num){
+	if(num > fileCount || num == 0)
+		return XST_FAILURE;
+
+	uint startIdx = 0;
+	uint idx = 0;
+	uint len = 0;
+
+	uint cnt = 0;
+
+	while(fileNameLst[idx] != '\0'){
+		cnt++;
+		if(cnt == num){
+			startIdx = idx;
+		}
+
+		do{
+			idx++;
+		}
+		while(!(fileNameLst[idx] == ',' || fileNameLst[idx] == '\0'));
+
+		idx++;
+
+		if(cnt == num){
+			len = idx - startIdx;
+			break;
+		}
+	}
+
+	if(len > 0){
+		strlcpy(fName, &fileNameLst[startIdx], len);
+		fName[len + 1] = '\0';
+		return XST_SUCCESS;
+	}
+	return XST_FAILURE;
+}
+
+static int sdReadPosture(TCHAR *fName){
+	FRESULT Res;
+	Res = f_open(&fil, fName, FA_READ);
+	if (Res) {
+		return XST_FAILURE;
+	}
+
+	Res = f_lseek(&fil, 0);
+	if (Res) {
+		return XST_FAILURE;
+	}
+
+	uint NumBytesRead;
+	Res = f_read(&fil, (void*)xPosture, sizeof(xPosture), &NumBytesRead);
+	if (Res) {
+		return XST_FAILURE;
+	}
+	return XST_SUCCESS;
+}
+
 // remote App
 /* thread spawned for each connection */
-void process_request(void *p)
+static void process_request(void *p)
 {
 	int sd = (int)p;
 	int RECV_BUF_SIZE = 2048;
@@ -78,7 +173,31 @@ void process_request(void *p)
 	vTaskDelete(NULL);
 }
 
-void remote_application_thread(void *p)
+// logs Server
+static void process_logs_request(void *p)
+{
+	int sd = (int)p;
+	char recv_buf[] = "Hello\r\n";
+	int n = 7, nwrote;
+	TickType_t st = pdMS_TO_TICKS( 2000 );
+
+	while (1) {
+		/* handle request */
+		if ((nwrote = write(sd, recv_buf, n)) < 0) {
+			xil_printf("%s: ERROR responding to client echo request. received = %d, written = %d\r\n",
+					__FUNCTION__, n, nwrote);
+			xil_printf("Closing socket %d\r\n", sd);
+			break;
+		}
+		vTaskDelay( st );
+	}
+
+	/* close connection */
+	close(sd);
+	vTaskDelete(NULL);
+}
+
+static void remote_application_thread(void *p)
 {
 	int sock, new_sd;
 	struct sockaddr_in address, remote;
@@ -108,31 +227,7 @@ void remote_application_thread(void *p)
 	}
 }
 
-// logs Server
-void process_logs_request(void *p)
-{
-	int sd = (int)p;
-	char recv_buf[] = "Hello\r\n";
-	int n = 7, nwrote;
-	TickType_t st = pdMS_TO_TICKS( 2000 );
-
-	while (1) {
-		/* handle request */
-		if ((nwrote = write(sd, recv_buf, n)) < 0) {
-			xil_printf("%s: ERROR responding to client echo request. received = %d, written = %d\r\n",
-					__FUNCTION__, n, nwrote);
-			xil_printf("Closing socket %d\r\n", sd);
-			break;
-		}
-		vTaskDelay( st );
-	}
-
-	/* close connection */
-	close(sd);
-	vTaskDelete(NULL);
-}
-
-void logs_application_thread(void *p)
+static void logs_application_thread(void *p)
 {
 	int sock, new_sd;
 	struct sockaddr_in address, remote;
@@ -162,7 +257,7 @@ void logs_application_thread(void *p)
 	}
 }
 
-void network_thread(void *p)
+static void network_thread(void *p)
 {
     struct netif *netif;
     struct ip_addr ipaddr, netmask, gw;

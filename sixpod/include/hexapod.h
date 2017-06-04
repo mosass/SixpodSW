@@ -38,7 +38,6 @@ public:
 	bool readIMU();
 	void logBodyRot();
 	bool balance();
-	void moving();
 
 	FootTip applyRotToGait(int legId, Trajectory3d& traj);
 	void updateGoalPosition();

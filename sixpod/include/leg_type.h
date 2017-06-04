@@ -8,6 +8,8 @@
 #ifndef SRC_HEXAPOD_LEG_LEG_TYPE_H_
 #define SRC_HEXAPOD_LEG_LEG_TYPE_H_
 
+#include "math.h"
+
 class FootTip {
 public:
 	float x;
@@ -18,6 +20,11 @@ public:
 		this->x = x;
 		this->y = y;
 		this->z = z;
+	}
+
+	inline float getLenght() {
+		return sqrtf(
+				(this->x * this->x) + (this->y * this->y) + (this->z * this->z));
 	}
 
 	inline FootTip diff(const FootTip& R){

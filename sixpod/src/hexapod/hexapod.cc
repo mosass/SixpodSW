@@ -290,31 +290,3 @@ void HEXAPOD::updateGoalPosition(){
 			this->leg[i].setGoalPosition(this->footTip[i]);
 	}
 }
-
-void HEXAPOD::moving(){
-	for(int i = 0; i < 6; i++){
-		if(this->footTip[i].x > 7.0){
-			this->footTip[i].x = 7.0;
-		}
-		else if(this->footTip[i].x < -7.0){
-			this->footTip[i].x = -7.0;
-		}
-
-		if(this->footTip[i].y > 18.0){
-			this->footTip[i].y = 18.0;
-		}
-		else if(this->footTip[i].y < 7.0){
-			this->footTip[i].y = 7.0;
-		}
-
-		if(this->footTip[i].z > this->leg[i].zOffset){
-			this->footTip[i].z = this->leg[i].zOffset;
-		}
-		else if(this->footTip[i].z < -10.0){
-			this->footTip[i].z = -10.0;
-		}
-
-		this->leg[i].moveTo(this->footTip[i], this->dt);
-	}
-	return;
-}

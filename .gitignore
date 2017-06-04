@@ -1,5 +1,9 @@
 /.metadata
 /RemoteSystemsTempFiles
+/*/
+!/sixpod/*
+!/sixpod_freertos901_xilinx_bsp_0/*
+!/design_1_wrapper_hw_platform_0/*
 *.o
 *.a
 *.log

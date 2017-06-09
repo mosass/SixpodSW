@@ -196,7 +196,7 @@ void Leg::gaitTo(FootTip& targetFootTipPos, float in_sec, TaskHandle_t notifyTas
 	this->footTipPos = target;
 	Link3d targetJointPos = this->calcIk();
 
-	midFootipPos.z += ((target - currentFootTipPos).getLenght() / 3.0);
+	midFootipPos.z += ((target - currentFootTipPos).getLenght() / 2.0);
 	this->footTipPos = midFootipPos;
 	Link3d midJointPos = this->calcIk();
 

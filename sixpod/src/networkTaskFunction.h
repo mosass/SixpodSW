@@ -8,6 +8,8 @@
 #ifndef SRC_NETWORKTASKFUNCTION_H_
 #define SRC_NETWORKTASKFUNCTION_H_
 
+#include "joint_controls.h"
+
 #define THREAD_STACKSIZE 1024
 
 u16_t server_port = 9000;
@@ -177,15 +179,40 @@ static void process_request(void *p)
 static void process_logs_request(void *p)
 {
 	int sd = (int)p;
-	char recv_buf[] = "Hello\r\n";
-	int n = 7, nwrote;
-	TickType_t st = pdMS_TO_TICKS( 2000 );
+	char send_buf[1024];
+	int n_cnt = 0;
+	int nwrote;
+	TickType_t st = pdMS_TO_TICKS( 100 );
 
 	while (1) {
 		/* handle request */
-		if ((nwrote = write(sd, recv_buf, n)) < 0) {
+		n_cnt = 0;
+		for(int i = 0; i < 6; i++){
+			sprintf(send_buf + n_cnt,
+					"L%d footip: %d\t%d\t%d\t\tQVar: %d\t%d\t%d\t\tQPos: %d\t%d\t%d\t\tLoad: %d\t\t%d\t\t%d\r\n",
+					i+1,
+					(int)(Hexapod.leg[i].footTipPos.x * 10),
+					(int)(Hexapod.leg[i].footTipPos.y * 10),
+					(int)(Hexapod.leg[i].footTipPos.z * 10),
+					(int)Hexapod.leg[i].linkPos.a,
+					(int)Hexapod.leg[i].linkPos.b,
+					(int)Hexapod.leg[i].linkPos.c,
+					(int)JointGetPresentPositionDeg(Hexapod.leg[i].jointIdA),
+					(int)JointGetPresentPositionDeg(Hexapod.leg[i].jointIdB),
+					(int)JointGetPresentPositionDeg(Hexapod.leg[i].jointIdC),
+					(int)JointGetLoad(Hexapod.leg[i].jointIdA),
+					(int)JointGetLoad(Hexapod.leg[i].jointIdB),
+					(int)JointGetLoad(Hexapod.leg[i].jointIdC)
+			);
+			n_cnt = strlen(send_buf);
+		}
+
+		sprintf(send_buf + n_cnt, "\r\n");
+		n_cnt = strlen(send_buf);
+
+		if ((nwrote = write(sd, send_buf, n_cnt)) < 0) {
 			xil_printf("%s: ERROR responding to client echo request. received = %d, written = %d\r\n",
-					__FUNCTION__, n, nwrote);
+					__FUNCTION__, n_cnt, nwrote);
 			xil_printf("Closing socket %d\r\n", sd);
 			break;
 		}

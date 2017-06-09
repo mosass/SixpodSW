@@ -12,7 +12,7 @@
 #define SRC_HEXAPOD_LEG_LEG_H_
 
 class Leg {
-private:
+public:
 	uint8_t jointIdA;
 	uint8_t jointIdB;
 	uint8_t jointIdC;
@@ -21,7 +21,6 @@ private:
 	Link3d	linkPos;
 	Link3d	linkSpeed;
 
-public:
 	uint8_t id;
 	float zOffset;
 	bool invX;

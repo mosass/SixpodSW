@@ -266,16 +266,25 @@ static void sendRippleGait(bool first = false, bool last = false){
 }
 
 static void hexapodIMUTask( void *pvParameters ){
+	u32 btn;
+	btn = XGpio_DiscreteRead(&GpioBtnSw, SW_CH);
+	Hexapod.improvePitch = true;
+	Hexapod.improveRoll = true;
+	Hexapod.improveYaw = false;
+
 	for(;;){
 		if(Hexapod.readIMU()){
-//			if(Hexapod.improvePitch || Hexapod.improveRoll || Hexapod.improveYaw){
-//				// balance mode
-//				if(Hexapod.balance()){
-//					xil_printf("B");
-//					Hexapod.updateGoalPosition();
-//				}
-//			}
-			vTaskDelay(pdMS_TO_TICKS( 500 ));
+			btn = XGpio_DiscreteRead(&GpioBtnSw, SW_CH);
+			if(btn & (u32) 1 << 3){
+				if(Hexapod.improvePitch || Hexapod.improveRoll || Hexapod.improveYaw){
+					// balance mode
+					if(Hexapod.balance()){
+						xil_printf("B");
+						Hexapod.updateGoalPosition();
+					}
+				}
+			}
+			vTaskDelay(pdMS_TO_TICKS( 100 ));
 		}
 	}
 }
@@ -310,14 +319,15 @@ static void hexapodWalkingTask( void *pvParameters ){
 	int p_arr[] = {1, 2, 3, 4, 5, 6, 7, 8};
 	char fname[20];
 	uint idp = 0;
-	u32 btn;
+	u32 btn, sw;
 
 	XGpio_DiscreteWrite(&GpioLed, LED_CH, idp + 1);
 	for(;;){
 		xil_printf("Ready\r\n");
 		btn = XGpio_DiscreteRead(&GpioBtnSw, SW_CH);
+		sw = XGpio_DiscreteRead(&GpioBtnSw, BTN_CH);
 		while(!(btn & (u32) 0x7)){
-			if(btn & (u32) 1 << 3){
+			if(sw & (u32) 1 << 3){
 				xil_printf("+");
 				idp = (idp + 1) % 8;
 				XGpio_DiscreteWrite(&GpioLed, LED_CH, idp + 1);
@@ -325,6 +335,7 @@ static void hexapodWalkingTask( void *pvParameters ){
 			}
 			vTaskDelay(pdMS_TO_TICKS(500));
 			btn = XGpio_DiscreteRead(&GpioBtnSw, SW_CH);
+			sw = XGpio_DiscreteRead(&GpioBtnSw, BTN_CH);
 			xil_printf(".");
 		}
 		xil_printf(".\r\n");

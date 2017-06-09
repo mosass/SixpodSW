@@ -59,13 +59,13 @@ int CommPortInitial() {
  * 		- XST_FALIURE if number of bytes sent does not match with NumBytes parameter.
  */
 int CommPortSend(u8 *DataPtr, u32 NumBytes) {
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 	taskENTER_CRITICAL();
 #endif
 	unsigned int send_count = XUartPs_Send(&Uart_Ps, DataPtr, NumBytes);
 
 	if (send_count != NumBytes) {
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 		taskEXIT_CRITICAL();
 #endif
 		return XST_FAILURE;
@@ -75,7 +75,7 @@ int CommPortSend(u8 *DataPtr, u32 NumBytes) {
 	while (XUartPs_IsSending(&Uart_Ps))
 		;
 
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 	taskEXIT_CRITICAL();
 #endif
 	return XST_SUCCESS;
@@ -94,7 +94,7 @@ int CommPortSend(u8 *DataPtr, u32 NumBytes) {
  * 		NumBytes parameter.
  */
 int CommPortRecv(u8 *BufferPtr, u32 NumBytes) {
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 	taskENTER_CRITICAL();
 #endif
 	unsigned int recv_count = 0;
@@ -104,7 +104,7 @@ int CommPortRecv(u8 *BufferPtr, u32 NumBytes) {
 		recv_count += 1;
 	}
 
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 	taskEXIT_CRITICAL();
 #endif
 	return XST_SUCCESS;
@@ -213,7 +213,7 @@ int CommPortWriteByte(u8 Id, u8 Address, u8 Value){
  *
  * @return
  * 		- The data if reading successfully.
- * 		- XST_FAILURE if error was occur.
+ * 		- -1 if error was occur.
  */
 int CommPortReadWord(u8 Id, u8 Address) {
 	int status;
@@ -226,20 +226,20 @@ int CommPortReadWord(u8 Id, u8 Address) {
 
 	status = CommPortInitial();
 	if (XST_FAILURE == status) {
-		return XST_FAILURE;
+		return -1;
 	}
 
 	//send command
 	status = CommPortSend(cmd, READ_CMD_LENGTH);
 	if (XST_FAILURE == status) {
-		return XST_FAILURE;
+		return -1;
 	}
 
 	//wait for ACK signal
 	u8 res;
 	status = CommPortRecv(&res, 1);
 	if (XST_FAILURE == status) {
-		return XST_FAILURE;
+		return -1;
 	}
 
 	//check response
@@ -255,7 +255,7 @@ int CommPortReadWord(u8 Id, u8 Address) {
 		}
 	}
 
-	return XST_FAILURE;
+	return -1;
 }
 
 /*
@@ -266,7 +266,7 @@ int CommPortReadWord(u8 Id, u8 Address) {
  *
  * @return
  * 		- The data if reading successfully.
- * 		- XST_FAILURE if error was occur.
+ * 		- -1 if error was occur.
  */
 int CommPortReadByte(u8 Id, u8 Address) {
 	int status;
@@ -279,20 +279,20 @@ int CommPortReadByte(u8 Id, u8 Address) {
 
 	status = CommPortInitial();
 	if (XST_FAILURE == status) {
-		return XST_FAILURE;
+		return -1;
 	}
 
 	//send command
 	status = CommPortSend(cmd, READ_CMD_LENGTH);
 	if (XST_FAILURE == status) {
-		return XST_FAILURE;
+		return -1;
 	}
 
 	//wait for ACK signal
 	u8 res;
 	status = CommPortRecv(&res, 1);
 	if (XST_FAILURE == status) {
-		return XST_FAILURE;
+		return -1;
 	}
 
 	//check response
@@ -306,5 +306,5 @@ int CommPortReadByte(u8 Id, u8 Address) {
 			return recv_data;
 		}
 	}
-	return XST_FAILURE;
+	return -1;
 }

@@ -7,7 +7,6 @@
 
 #include "interrupt.h"
 
-#define USE_FREERTOS	1
 /************************** Variable Definitions *****************************/
 
 /*
@@ -57,7 +56,7 @@ int setupIntrSystem(int pinNumber, void (*callback)(XGpioPs*, u32, u32), int int
 
 int initScuGic(void){
 	int status;
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 	GicInst = (XScuGic*) prvGetInterruptControllerInstance();
 #else
 	GicInst = &XScuGicInst;

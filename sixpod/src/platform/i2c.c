@@ -42,12 +42,12 @@ int initI2c(void){
 
 int i2cWrite(u8 slaveAddr, u8 regAddr, u8 length, u8 *data){
 	int status;
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 	taskENTER_CRITICAL();
 #endif
 	status = initI2c();
 	if (status != XST_SUCCESS) {
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 		taskEXIT_CRITICAL();
 #endif
 		return XST_FAILURE;
@@ -62,7 +62,7 @@ int i2cWrite(u8 slaveAddr, u8 regAddr, u8 length, u8 *data){
 	status = XIicPs_MasterSendPolled(&I2cInts, dataSend, length + 1,
 			slaveAddr);
 	if (status != XST_SUCCESS) {
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 		taskEXIT_CRITICAL();
 #endif
 		return XST_FAILURE;
@@ -72,7 +72,7 @@ int i2cWrite(u8 slaveAddr, u8 regAddr, u8 length, u8 *data){
 		/* NOP */
 	}
 	usleep(500);
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 	taskEXIT_CRITICAL();
 #endif
 	return XST_SUCCESS;
@@ -80,12 +80,12 @@ int i2cWrite(u8 slaveAddr, u8 regAddr, u8 length, u8 *data){
 
 int i2cRead(u8 slaveAddr, u8 regAddr, u8 length, u8 *data){
 	int status;
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 	taskENTER_CRITICAL();
 #endif
 	status = initI2c();
 	if (status != XST_SUCCESS) {
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 		taskEXIT_CRITICAL();
 #endif
 		return XST_FAILURE;
@@ -94,7 +94,7 @@ int i2cRead(u8 slaveAddr, u8 regAddr, u8 length, u8 *data){
 	status = XIicPs_MasterSendPolled(&I2cInts, &regAddr, 1,
 			slaveAddr);
 	if (status != XST_SUCCESS) {
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 		taskEXIT_CRITICAL();
 #endif
 		return XST_FAILURE;
@@ -107,13 +107,13 @@ int i2cRead(u8 slaveAddr, u8 regAddr, u8 length, u8 *data){
 	status = XIicPs_MasterRecvPolled(&I2cInts, data, length,
 			slaveAddr);
 	if (status != XST_SUCCESS) {
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 		taskEXIT_CRITICAL();
 #endif
 		return XST_FAILURE;
 	}
 	usleep(500);
-#if USE_FREERTOS == 1
+#ifdef USE_FREERTOS
 	taskEXIT_CRITICAL();
 #endif
 	return XST_SUCCESS;

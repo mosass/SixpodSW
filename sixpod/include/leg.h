@@ -40,7 +40,7 @@ public:
 	void moveA(bool skipSetSpeed);
 	void moveB(bool skipSetSpeed);
 	void moveC(bool skipSetSpeed);
-	void gaitTo(FootTip& targetFootTipPos, float in_sec, TaskHandle_t notifyTask);
+	void gaitTo(FootTip& targetFootTipPos, float in_sec, float z_add, TaskHandle_t notifyTask);
 };
 
 #endif /* SRC_HEXAPOD_LEG_LEG_H_ */

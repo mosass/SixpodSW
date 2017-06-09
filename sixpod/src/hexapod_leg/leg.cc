@@ -186,7 +186,7 @@ void Leg::moveToSync(FootTip& targetFootTipPos, float in_sec){
 	return;
 }
 
-void Leg::gaitTo(FootTip& targetFootTipPos, float in_sec, TaskHandle_t notifyTask){
+void Leg::gaitTo(FootTip& targetFootTipPos, float in_sec, float z_add, TaskHandle_t notifyTask){
 	FootTip target = targetFootTipPos;
 	FootTip currentFootTipPos = this->footTipPos;
 	Link3d currentJointPos = this->linkPos;
@@ -196,7 +196,7 @@ void Leg::gaitTo(FootTip& targetFootTipPos, float in_sec, TaskHandle_t notifyTas
 	this->footTipPos = target;
 	Link3d targetJointPos = this->calcIk();
 
-	midFootipPos.z += ((target - currentFootTipPos).getLenght() / 2.0);
+	midFootipPos.z += ((target - currentFootTipPos).getLenght() * z_add);
 	this->footTipPos = midFootipPos;
 	Link3d midJointPos = this->calcIk();
 

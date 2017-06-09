@@ -8,9 +8,6 @@
 #ifndef SRC_PLATFORM_PLATFORM_H_
 #define SRC_PLATFORM_PLATFORM_H_
 
-/* Config */
-#define USE_FREERTOS	1
-
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
 #include "task.h"
@@ -33,5 +30,8 @@
 #include "xsdps.h"		/* SD device driver */
 #include "ff.h"
 #include "xil_cache.h"
+
+
+#define THREAD_STACKSIZE 1024
 
 #endif /* SRC_PLATFORM_PLATFORM_H_ */

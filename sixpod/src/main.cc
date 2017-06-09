@@ -2,19 +2,20 @@
  * Main C++ Application
  */
 
-
 /* FreeRTOS includes. */
 #include "platform.h"
 
 /* Module includes */
 #include "hexapod.h"
 
-static XGpio GpioBtnSw;
-static XGpio GpioLed;
+static HEXAPOD Hexapod;
 
-#define LED_CH 1
-#define BTN_CH 1
-#define SW_CH  2
+static volatile float stepTime = INITIAL_STEP_TIME;
+static volatile float stepUpZ = INITIAL_STEP_UP_Z;
+
+static int U = 1;
+static const int V = 300;
+static int IU = 400;
 
 static QueueHandle_t xPostureQueue[6];
 static TaskHandle_t xInitTask;
@@ -22,49 +23,28 @@ static TaskHandle_t xWalkingTask;
 static TaskHandle_t xLegGait[6];
 static TaskHandle_t xIMUTask;
 
-static Posture xPosture[6];
+static volatile Posture xPosture[6];
 
-static const char * taskName[6] = {
-		"Leg1Gait",
-		"Leg2Gait",
-		"Leg3Gait",
-		"Leg4Gait",
-		"Leg5Gait",
-		"Leg6Gait"
-};
+// FS Function
+static const TCHAR *FSPath = "0:/";
+static FIL fil;		/* File object */
+static FATFS fatfs;
+static char fileNameLst[512];
+static uint fileCount = 0;
 
-/* Task function */
-#include "networkTaskFunction.h"
-#include "taskFunction.h"
+static int sdMount();
+static void sdGetFileList();
+static int sdGetFilename(TCHAR *fName, uint num);
+static int sdReadPosture(TCHAR *fName);
 
 extern "C" void lwip_init();
 static void init( void * );
 
+/* Task function */
+#include "taskFunctions.h"
+
 int main (void) {
 	BaseType_t status;
-//-------------------------------
-	status = XGpio_Initialize(&GpioBtnSw, XPAR_GPIO_0_DEVICE_ID);
-	if (status != XST_SUCCESS) {
-		xil_printf("Gpio Initialization Failed\r\n");
-		return XST_FAILURE;
-	}
-
-	status = XGpio_Initialize(&GpioLed, XPAR_GPIO_1_DEVICE_ID);
-	if (status != XST_SUCCESS) {
-		xil_printf("Gpio Initialization Failed\r\n");
-		return XST_FAILURE;
-	}
-
-	/* Set the direction for all signals as inputs except the Btn INPUT */
-	XGpio_SetDataDirection(&GpioBtnSw, SW_CH, 0xFFFFFFFF);
-	XGpio_SetDataDirection(&GpioBtnSw, BTN_CH, 0xFFFFFFFF);
-	XGpio_SetDataDirection(&GpioLed, LED_CH, 0xFFFFFFF0);
-//	while(1){
-//		u32 btn = XGpio_DiscreteRead(&Gpio, 2);
-//		xil_printf("%x\r\n", btn);
-//		sleep(1);
-//	}
-//	return XST_SUCCESS;
 //-------------------------------
 	for(int i = 0; i < 6; i++){
 		xPostureQueue[i] = xQueueCreate( 10, sizeof( int ));
@@ -88,9 +68,6 @@ int main (void) {
 }
 
 static void init( void *pvParameters ) {
-
-//	vTaskDelete(NULL);
-//-----------------------------------------
 	BaseType_t status;
 
 	xil_printf("Initial\r\n");
@@ -123,6 +100,27 @@ static void init( void *pvParameters ) {
 		xil_printf("Can not create IMU task.\r\n");
 	}
 
+	char taskName[6][9] = {
+			"Leg1Gait",
+			"Leg2Gait",
+			"Leg3Gait",
+			"Leg4Gait",
+			"Leg5Gait",
+			"Leg6Gait"
+	};
+
+	for(int i = 0; i < 6; i++){
+		xQueueReset(xPostureQueue[i]);
+
+		status = xTaskCreate( hexapodLegGaitTask,
+					taskName[i], configMINIMAL_STACK_SIZE,
+					(void *) &xPosture[i], DEFAULT_THREAD_PRIO + 1, &xLegGait[i] );
+
+		if(status != pdPASS){
+			xil_printf("Can not create LegGait task.\r\n");
+		}
+	}
+
 	status = xTaskCreate( hexapodWalkingTask,
 				 ( const char * ) "Walking",
 				 configMINIMAL_STACK_SIZE,
@@ -134,7 +132,98 @@ static void init( void *pvParameters ) {
 		xil_printf("Can not create Walking task.\r\n");
 	}
 
+
 	xil_printf("Initialed\r\n");
 	vTaskDelete(NULL);
 }
 
+static int sdMount(){
+	FRESULT Res;
+	Res = f_mount(&fatfs, FSPath, 0);
+	if (Res == FR_OK) {
+		return XST_SUCCESS;
+	}
+	return XST_FAILURE;
+}
+
+static void sdGetFileList(){
+	FRESULT Res;
+	DIR dir;
+	FILINFO fno;
+
+	uint idx = 0;
+
+	Res = f_opendir(&dir, FSPath);
+	if (Res == FR_OK) {
+		for(;;){
+			Res = f_readdir(&dir, &fno);
+			if (Res != FR_OK || fno.fname[0] == 0) break;
+			if (!(fno.fattrib & AM_DIR)){
+				fileCount++;
+				idx = strlen(fileNameLst);
+				sprintf(&fileNameLst[idx], "%s,", fno.fname);
+//				xil_printf("%s\t%d\n", fno.fname, fno.fsize);
+			}
+		}
+		idx = strlen(fileNameLst) - 1;
+		fileNameLst[idx] = '\0';
+//		xil_printf("%s\n", fileNameLst);
+	}
+}
+
+static int sdGetFilename(TCHAR *fName, uint num){
+	if(num > fileCount || num == 0)
+		return XST_FAILURE;
+
+	uint startIdx = 0;
+	uint idx = 0;
+	uint len = 0;
+
+	uint cnt = 0;
+
+	while(fileNameLst[idx] != '\0'){
+		cnt++;
+		if(cnt == num){
+			startIdx = idx;
+		}
+
+		do{
+			idx++;
+		}
+		while(!(fileNameLst[idx] == ',' || fileNameLst[idx] == '\0'));
+
+		idx++;
+
+		if(cnt == num){
+			len = idx - startIdx;
+			break;
+		}
+	}
+
+	if(len > 0){
+		strlcpy(fName, &fileNameLst[startIdx], len);
+		fName[len + 1] = '\0';
+		return XST_SUCCESS;
+	}
+	return XST_FAILURE;
+}
+
+static int sdReadPosture(TCHAR *fName){
+		FRESULT Res;
+		Res = f_open(&fil, fName, FA_READ);
+		if (Res) {
+			return XST_FAILURE;
+		}
+
+		Res = f_lseek(&fil, 0);
+		if (Res) {
+			return XST_FAILURE;
+		}
+
+		uint NumBytesRead;
+		Res = f_read(&fil, (void*)xPosture, sizeof(xPosture), &NumBytesRead);
+		if (Res) {
+			return XST_FAILURE;
+		}
+		return XST_SUCCESS;
+	}

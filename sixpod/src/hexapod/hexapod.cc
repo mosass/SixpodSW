@@ -31,8 +31,8 @@ HEXAPOD::HEXAPOD(){
 	}
 }
 
-void HEXAPOD::begin(){
-	Imu.setup(MPU_INTR_PIN);
+void HEXAPOD::begin(void *imuCallBack, volatile bool* flagVar){
+	Imu.setup(MPU_INTR_PIN, imuCallBack, flagVar);
 	int status;
 	float setup_time = SETUP_TIME;
 	for(int i = 0; i < 6; i++){

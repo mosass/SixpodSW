@@ -21,13 +21,12 @@ public:
 	VectorFloat gravity;    // [x, y, z]            gravity vector
 	float euler[3];         // [psi, theta, phi]    Euler angle container
 	float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
-
-	IMU();
+	volatile bool *MpuIntrFlag;
 
 	int autoCalibrateOffset(int16_t &off_acc_x,
 			int16_t &off_acc_y, int16_t &off_acc_z, int16_t &off_gyr_x,
 			int16_t &off_gyr_y, int16_t &off_gyr_z);
-	int setup (int intrPin);
+	int setup (int intrPin, void * dmpDataReadyCallBack, volatile bool* flagVar);
 	int readFifoBuffer();
 	bool available();
 };

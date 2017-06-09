@@ -25,7 +25,7 @@ public:
 	Rot3d bodyRotOffset;
 
 	HEXAPOD();
-	void begin();
+	void begin(void * imuCallBack, volatile bool* flagVar);
 	bool readIMU();
 	void logBodyRot();
 };

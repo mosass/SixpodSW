@@ -9,20 +9,10 @@
 #include "imu.h"
 #include "interrupt.h"
 
-static volatile bool MpuIntrFlag;     // indicates whether MPU interrupt pin has gone high
-
-static void dmpDataReady(XGpioPs* cbRef, u32 bank, u32 status) {
-	MpuIntrFlag = true;
-}
-
 static MPU6050 mpuInts;
 
-IMU::IMU(){
-	MpuIntrFlag = false;
-}
-
 bool IMU::available(){
-	return MpuIntrFlag;
+	return *MpuIntrFlag;
 }
 
 int IMU::autoCalibrateOffset(int16_t &off_acc_x,
@@ -141,7 +131,7 @@ int IMU::autoCalibrateOffset(int16_t &off_acc_x,
 	}
 }
 
-int IMU::setup (int intrPin){
+int IMU::setup (int intrPin, void * dmpDataReadyCallBack, volatile bool* flagVar){
 	int status;
 	int16_t ofs_acc_x, ofs_acc_y, ofs_acc_z;
 	int16_t ofs_gyr_x, ofs_gyr_y, ofs_gyr_z;
@@ -168,12 +158,14 @@ int IMU::setup (int intrPin){
 
 	if(status == 0){
 		mpuInts.setDMPEnabled(true);
-		setupIntrSystem(intrPin, dmpDataReady, INTR_TYPE_EDGE_RISING);
+		setupIntrSystem(intrPin, (void (*)(XGpioPs*, u32, u32)) dmpDataReadyCallBack, INTR_TYPE_EDGE_RISING);
+		MpuIntrFlag = flagVar;
+		*MpuIntrFlag = false;
 		enableIntr(intrPin);
 	} else {
 		return XST_FAILURE;
 	}
-	MpuIntrFlag = false;
+	*MpuIntrFlag = false;
 	return XST_SUCCESS;
 }
 
@@ -204,7 +196,7 @@ int IMU::readFifoBuffer() {
 		mpuInts.dmpGetLinearAccel(&accelReal, &accel, &gravity);
 		mpuInts.dmpGetLinearAccelInWorld(&accelWorld, &accelReal, &quat);
 
-		MpuIntrFlag = false;
+		*MpuIntrFlag = false;
 		return XST_SUCCESS;
 	}
 	return XST_FAILURE;

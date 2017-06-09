@@ -43,6 +43,14 @@ static void init( void * );
 /* Task function */
 #include "taskFunctions.h"
 
+static volatile bool MpuIntrFlag;     // indicates whether MPU interrupt pin has gone high
+
+static void dmpDataReady(XGpioPs* cbRef, u32 bank, u32 status) {
+	MpuIntrFlag = true;
+	if(xIMUTask != NULL)
+		vTaskNotifyGiveFromISR(xIMUTask, NULL);
+}
+
 int main (void) {
 	BaseType_t status;
 //-------------------------------
@@ -78,7 +86,7 @@ static void init( void *pvParameters ) {
 	sdGetFilename(fn, 1);
 	sdReadPosture(fn);
 
-	Hexapod.begin();
+	Hexapod.begin( (void *) dmpDataReady, &MpuIntrFlag);
 
 	xil_printf("Initial Network\r\n");
 	/* initialize lwIP before calling sys_thread_new */

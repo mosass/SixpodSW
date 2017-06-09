@@ -202,9 +202,8 @@ static void sendRippleGait(){
 
 static void hexapodIMUTask( void *pvParameters ){
 	for(;;){
-		if(Hexapod.readIMU()){
-			vTaskDelay(pdMS_TO_TICKS( 100 ));
-		}
+		ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
+		Hexapod.readIMU();
 	}
 }
 

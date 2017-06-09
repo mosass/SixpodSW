@@ -16,7 +16,7 @@
 XGpioPs GpioInst; /* The Instance of the GPIO Driver */
 XScuGic* GicInst; /* The Instance of the Interrupt Controller Driver */
 
-#if USE_FREERTOS == 0
+#ifndef USE_FREERTOS
 XScuGic XScuGicInst;
 #endif
 

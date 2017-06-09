@@ -15,7 +15,7 @@ static volatile float stepUpZ = INITIAL_STEP_UP_Z;
 
 static int U = 1;
 static const int V = 300;
-static int IU = 400;
+static const int IU = 400;
 
 static QueueHandle_t xPostureQueue[6];
 static TaskHandle_t xInitTask;
@@ -74,6 +74,9 @@ static void init( void *pvParameters ) {
 
 	sdMount();	// Mount File System
 	sdGetFileList(); // Update File List
+	TCHAR fn[20];
+	sdGetFilename(fn, 1);
+	sdReadPosture(fn);
 
 	Hexapod.begin();
 
@@ -93,32 +96,14 @@ static void init( void *pvParameters ) {
 				 ( const char * ) "IMU",
 				 configMINIMAL_STACK_SIZE,
 				 NULL,
-				 DEFAULT_THREAD_PRIO ,
+				 DEFAULT_THREAD_PRIO,
 				 &xIMUTask );
 
 	if(status != pdPASS){
 		xil_printf("Can not create IMU task.\r\n");
 	}
-
-	char taskName[6][9] = {
-			"Leg1Gait",
-			"Leg2Gait",
-			"Leg3Gait",
-			"Leg4Gait",
-			"Leg5Gait",
-			"Leg6Gait"
-	};
-
-	for(int i = 0; i < 6; i++){
-		xQueueReset(xPostureQueue[i]);
-
-		status = xTaskCreate( hexapodLegGaitTask,
-					taskName[i], configMINIMAL_STACK_SIZE,
-					(void *) &xPosture[i], DEFAULT_THREAD_PRIO + 1, &xLegGait[i] );
-
-		if(status != pdPASS){
-			xil_printf("Can not create LegGait task.\r\n");
-		}
+	else{
+		xil_printf("Start IMU task.\r\n");
 	}
 
 	status = xTaskCreate( hexapodWalkingTask,
@@ -130,6 +115,9 @@ static void init( void *pvParameters ) {
 
 	if(status != pdPASS){
 		xil_printf("Can not create Walking task.\r\n");
+	}
+	else{
+		xil_printf("Start Walking task.\r\n");
 	}
 
 

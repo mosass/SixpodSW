@@ -36,7 +36,12 @@ void JointSetGoalTorque(int Id, int Torque) {
  * Get present load.
  */
 int JointGetLoad(int Id) {
-	return CommPortReadWord(Id, PRESENT_LOAD);
+	int result = CommPortReadWord(Id, PRESENT_LOAD);
+	if((result & (1 << 10)) > 0){
+		result = (result & (0b1111111111UL));
+		result = -result;
+	}
+	return result;
 }
 
 /**************************** Position function *******************************/

@@ -26,6 +26,24 @@ u16_t logs_server_port = 9001;
 static struct netif server_netif;
 struct netif *echo_netif;
 
+void ftostr(char * str, float fval)
+{
+	float tmpVal = (fval < 0) ? -fval : fval;
+
+	int tmpInt1 = tmpVal;                  // Get the integer.
+	float tmpFrac = tmpVal - tmpInt1;      // Get fraction.
+	int tmpInt2 = trunc(tmpFrac * 10000);  // Turn into integer.
+
+	// Print as parts, note that you need 0-padding for fractional bit.
+	if(fval < 0){
+		sprintf (str, "-%d.%04d", tmpInt1, tmpInt2);
+	}
+	else{
+		sprintf (str, "%d.%04d", tmpInt1, tmpInt2);
+	}
+
+}
+
 // remote App
 /* thread spawned for each connection */
 static void process_request(void *p)
@@ -127,30 +145,94 @@ static void process_logs_request(void *p)
 	int nwrote;
 	TickType_t st = pdMS_TO_TICKS( 100 );
 
+	sprintf(send_buf,
+		"yaw,pitch,roll,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\r\n",
+		"x1,y1,z1", "x2,y2,z2", "x3,y3,z3", "x4,y4,z4", "x5,y5,z5", "x6,y6,z6",
+		"ta1,tb1,tc1", "ta2,tb2,tc2", "ta3,tb3,tc3", "ta4,tb4,tc4", "ta5,tb5,tc5", "ta6,tb6,tc6",
+		"qa1,qb1,qc1", "qa2,qb2,qc2", "qa3,qb3,qc3", "qa4,qb4,qc4", "qa5,qb5,qc5", "qa6,qb6,qc6",
+		"la1,lb1,lc1", "la2,lb2,lc2", "la3,lb3,lc3", "la4,lb4,lc4", "la5,lb5,lc5", "la6,lb6,lc6"
+	);
+
+	n_cnt = strlen(send_buf);
+
+	if ((nwrote = write(sd, send_buf, n_cnt)) < 0) {
+		xil_printf("%s: ERROR responding to client echo request. received = %d, written = %d\r\n",
+				__FUNCTION__, n_cnt, nwrote);
+		xil_printf("Closing socket %d\r\n", sd);
+	}
+
+	char strfval[10];
+	char *pStr;
 	while (1) {
 		/* handle request */
-		n_cnt = 0;
+		pStr = send_buf;
+
+		ftostr(strfval, Hexapod.bodyRot.y);
+		sprintf(pStr, "%s,", strfval);
+		pStr += strlen(pStr);
+
+		ftostr(strfval, Hexapod.bodyRot.p);
+		sprintf(pStr, "%s,", strfval);
+		pStr += strlen(pStr);
+
+		ftostr(strfval, Hexapod.bodyRot.r);
+		sprintf(pStr, "%s,", strfval);
+		pStr += strlen(pStr);
+
 		for(int i = 0; i < 6; i++){
-			sprintf(send_buf + n_cnt,
-					"L%d footip: %d\t%d\t%d\t\tQVar: %d\t%d\t%d\t\tQPos: %d\t%d\t%d\t\tLoad: %d\t\t%d\t\t%d\r\n",
-					i+1,
-					(int)(Hexapod.leg[i].footTipPos.x * 10),
-					(int)(Hexapod.leg[i].footTipPos.y * 10),
-					(int)(Hexapod.leg[i].footTipPos.z * 10),
-					(int)Hexapod.leg[i].linkPos.a,
-					(int)Hexapod.leg[i].linkPos.b,
-					(int)Hexapod.leg[i].linkPos.c,
-					(int)JointGetPresentPositionDeg(Hexapod.leg[i].jointIdA),
-					(int)JointGetPresentPositionDeg(Hexapod.leg[i].jointIdB),
-					(int)JointGetPresentPositionDeg(Hexapod.leg[i].jointIdC),
-					(int)JointGetLoad(Hexapod.leg[i].jointIdA),
-					(int)JointGetLoad(Hexapod.leg[i].jointIdB),
-					(int)JointGetLoad(Hexapod.leg[i].jointIdC)
-			);
-			n_cnt = strlen(send_buf);
+			ftostr(strfval, Hexapod.leg[i].footTipPos.x);
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+
+			ftostr(strfval, Hexapod.leg[i].footTipPos.y);
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+
+			ftostr(strfval, Hexapod.leg[i].footTipPos.z);
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
 		}
 
-		sprintf(send_buf + n_cnt, "\r\n");
+		for(int i = 0; i < 6; i++){
+			ftostr(strfval, Hexapod.leg[i].linkPos.a);
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+
+			ftostr(strfval, Hexapod.leg[i].linkPos.b);
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+
+			ftostr(strfval, Hexapod.leg[i].linkPos.c);
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+		}
+
+		for(int i = 0; i < 6; i++){
+			ftostr(strfval, JointGetPresentPositionDeg(Hexapod.leg[i].jointIdA));
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+
+			ftostr(strfval, JointGetPresentPositionDeg(Hexapod.leg[i].jointIdB));
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+
+			ftostr(strfval, JointGetPresentPositionDeg(Hexapod.leg[i].jointIdC));
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+		}
+
+		for(int i = 0; i < 6; i++){
+			sprintf(pStr, "%d,", JointGetLoad(Hexapod.leg[i].jointIdA));
+			pStr += strlen(pStr);
+
+			sprintf(pStr, "%d,", JointGetLoad(Hexapod.leg[i].jointIdB));
+			pStr += strlen(pStr);
+
+			sprintf(pStr, "%d,", JointGetLoad(Hexapod.leg[i].jointIdC));
+			pStr += strlen(pStr);
+		}
+
+		sprintf(pStr - 1, "\r\n");
 		n_cnt = strlen(send_buf);
 
 		if ((nwrote = write(sd, send_buf, n_cnt)) < 0) {

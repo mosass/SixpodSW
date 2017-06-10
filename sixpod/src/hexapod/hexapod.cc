@@ -64,24 +64,9 @@ bool HEXAPOD::readIMU(){
 			bodyRot.r = Imu.euler[2];
 
 			bodyRot = bodyRot - bodyRotOffset;
-			logBodyRot();
 			return true;
 		}
 	}
 
 	return false;
-}
-
-void HEXAPOD::logBodyRot(){
-	xil_printf("current YPR : ");
-	print_float(bodyRot.y);
-	print_float(bodyRot.p);
-	print_float(bodyRot.r);
-
-	xil_printf("offset YPR : ");
-	print_float(bodyRotOffset.y);
-	print_float(bodyRotOffset.p);
-	print_float(bodyRotOffset.r);
-
-	xil_printf("\r\n");
 }

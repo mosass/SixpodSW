@@ -27,7 +27,6 @@ public:
 	HEXAPOD();
 	void begin(void * imuCallBack, volatile bool* flagVar);
 	bool readIMU();
-	void logBodyRot();
 };
 
 #endif /* SRC_HEXAPOD_HEXAPOD_H_ */

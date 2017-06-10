@@ -23,6 +23,8 @@ static TaskHandle_t xWalkingTask;
 static TaskHandle_t xLegGait[6];
 static TaskHandle_t xIMUTask;
 
+static TaskHandle_t xRemoteNetworkTask;
+
 static volatile Posture xPosture[6];
 
 // FS Function
@@ -82,7 +84,7 @@ static void init( void *pvParameters ) {
 
 	sdMount();	// Mount File System
 	sdGetFileList(); // Update File List
-	TCHAR fn[20];
+	TCHAR fn[50];
 	sdGetFilename(fn, 1);
 	sdReadPosture(fn);
 

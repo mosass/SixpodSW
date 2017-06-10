@@ -297,11 +297,11 @@ static void hexapodWalkingTask( void *pvParameters ){
 	for(int i = 0; i < 6; i++){
 		xQueueReset(xPostureQueue[i]);
 
-		int status = xTaskCreate( hexapodLegGaitTask,
+		int statusCreate = xTaskCreate( hexapodLegGaitTask,
 					taskName[i], configMINIMAL_STACK_SIZE,
 					(void *) i, DEFAULT_THREAD_PRIO + 1, &xLegGait[i] );
 
-		if(status != pdPASS){
+		if(statusCreate != pdPASS){
 			xil_printf("Can not create LegGait task.\r\n");
 		}
 		else{
@@ -309,25 +309,55 @@ static void hexapodWalkingTask( void *pvParameters ){
 		}
 	}
 
-	for(;;){
-//		sendInitGait();
-//		sendTripodGait(1);
-//		for(int i = 0; i < 2; i++){
-//			sendTripodGait();
-//		}
-		sendInitGait();
-		sendWaveGait(1);
-		for(int i = 0; i < 2; i++){
-			sendWaveGait();
+	BaseType_t status;
+	uint32_t ulNotifiedValue;
+	uint32_t state = 0; 			// 0 => stop, 1 => waveGait, 2 => rippleGait, 3 => tripodGait
+	uint32_t prvState = 0;
+
+	for (;;) {
+		status = xTaskNotifyWait(0UL, 0xffffffffUL , &ulNotifiedValue, 0);
+
+		if (status == pdTRUE) {
+			state = ulNotifiedValue;
+			xTaskNotifyGive(xRemoteNetworkTask);
 		}
 
-//		sendRippleGait(1);
-//
-//		for(int i = 0; i < 2; i++){
-//			sendRippleGait();
-//		}
-//		sendRippleGait(2);
-//		sendInitGait();
+		switch (state) {
+			case WALKING_STOP: {
+				if (prvState == 2) {
+					sendRippleGait(2);
+				}
+			}
+			case WALKING_WAV: {
+				if (prvState != WALKING_WAV){
+					sendInitGait();
+					sendWaveGait(1); // first gait
+				}
+				else {
+					sendWaveGait();
+				}
+			}
+			case WALKING_RIPP: {
+				if (prvState != WALKING_RIPP){
+					sendInitGait();
+					sendRippleGait(1); // first gait
+				}
+				else {
+					sendRippleGait();
+				}
+			}
+			case WALKING_TRI: {
+				if (prvState != WALKING_TRI){
+					sendInitGait();
+					sendTripodGait(1); // first gait
+				}
+				else {
+					sendTripodGait();
+				}
+			}
+		}
+
+		prvState = state;
 	}
 }
 

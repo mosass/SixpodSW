@@ -310,16 +310,15 @@ static void hexapodWalkingTask( void *pvParameters ){
 	}
 
 	BaseType_t status;
-	uint32_t ulNotifiedValue;
-	uint32_t state = 0; 			// 0 => stop, 1 => waveGait, 2 => rippleGait, 3 => tripodGait
+	uint32_t state = WALKING_STOP; 			// 0 => stop, 1 => waveGait, 2 => rippleGait, 3 => tripodGait
 	uint32_t prvState = 0;
 
 	for (;;) {
-		status = xTaskNotifyWait(0UL, 0xffffffffUL , &ulNotifiedValue, 0);
+		uint32_t state_tmp;
+		status = xQueueReceive(xWalkQueue, &state_tmp, 0);
 
 		if (status == pdTRUE) {
-			state = ulNotifiedValue;
-			xTaskNotifyGive(xRemoteNetworkTask);
+			state = state_tmp;
 		}
 
 		switch (state) {
@@ -327,6 +326,8 @@ static void hexapodWalkingTask( void *pvParameters ){
 				if (prvState == 2) {
 					sendRippleGait(2);
 				}
+				vTaskDelay(pdMS_TO_TICKS(500));
+				break;
 			}
 			case WALKING_WAV: {
 				if (prvState != WALKING_WAV){
@@ -336,6 +337,7 @@ static void hexapodWalkingTask( void *pvParameters ){
 				else {
 					sendWaveGait();
 				}
+				break;
 			}
 			case WALKING_RIPP: {
 				if (prvState != WALKING_RIPP){
@@ -345,6 +347,7 @@ static void hexapodWalkingTask( void *pvParameters ){
 				else {
 					sendRippleGait();
 				}
+				break;
 			}
 			case WALKING_TRI: {
 				if (prvState != WALKING_TRI){
@@ -354,6 +357,7 @@ static void hexapodWalkingTask( void *pvParameters ){
 				else {
 					sendTripodGait();
 				}
+				break;
 			}
 		}
 

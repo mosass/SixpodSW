@@ -18,6 +18,7 @@ static const int V = 300;
 static const int IU = 400;
 
 static QueueHandle_t xPostureQueue[6];
+static QueueHandle_t xWalkQueue;
 static TaskHandle_t xInitTask;
 static TaskHandle_t xWalkingTask;
 static TaskHandle_t xLegGait[6];
@@ -59,6 +60,8 @@ int main (void) {
 	for(int i = 0; i < 6; i++){
 		xPostureQueue[i] = xQueueCreate( 10, sizeof( int ));
 	}
+
+	xWalkQueue = xQueueCreate(1, sizeof(int));
 
 	status = xTaskCreate( init, 			/* The function that implements the task. */
 				( const char * ) "init", 	/* Text name for the task, provided to assist debugging only. */
@@ -150,7 +153,7 @@ static void sdGetFileList(){
 	FILINFO fno;
 
 	uint idx = 0;
-
+	fileNameLst[0] = '\0';
 	Res = f_opendir(&dir, FSPath);
 	if (Res == FR_OK) {
 		for(;;){

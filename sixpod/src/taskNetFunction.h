@@ -40,6 +40,8 @@ static void process_request(void *p)
 	TCHAR filename[50];
 	char ack_msg[] = "ACK";
 
+	int walkQ;
+
 	while (1) {
 		/* read a max of RECV_BUF_SIZE bytes from socket */
 		if ((n = read(sd, recv_buf, RECV_BUF_SIZE)) < 0) {
@@ -57,12 +59,14 @@ static void process_request(void *p)
 			if(sscanf(recv_buf, "%d %f", &cmd, &fval) == 2){
 				stepTime = fval;
 				write(sd, ack_msg, strlen(ack_msg));
+				xil_printf("SET_STEP_TIME\r\n");
 			}
 			break;
 		case SET_STEP_UPZ:
 			if(sscanf(recv_buf, "%d %f", &cmd, &fval) == 2){
 				stepUpZ = fval;
 				write(sd, ack_msg, strlen(ack_msg));
+				xil_printf("SET_STEP_UPZ\r\n");
 			}
 			break;
 		case SET_SELECT_POS:
@@ -70,31 +74,41 @@ static void process_request(void *p)
 				sdGetFilename(filename, ival);
 				sdReadPosture(filename);
 				write(sd, ack_msg, strlen(ack_msg));
+				xil_printf("SET_SELECT_POS\r\n");
 			}
 			break;
 		case GET_FILE_LIST:
-			write(sd, ack_msg, strlen(ack_msg));
+			sdGetFileList();
 			write(sd, fileNameLst, strlen(fileNameLst));
+			xil_printf("GET_FILE_LIST\r\n");
 			break;
 		case WALKING_STOP:
-			xTaskNotify(xWalkingTask, WALKING_STOP, eSetValueWithOverwrite);
-			ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+			walkQ = WALKING_STOP;
+			xQueueReset(xWalkQueue);
+			xQueueSend(xWalkQueue, (void *) &walkQ, 0);
 			write(sd, ack_msg, strlen(ack_msg));
+			xil_printf("WALKING_STOP\r\n");
 			break;
 		case WALKING_WAV:
-			xTaskNotify(xWalkingTask, WALKING_WAV, eSetValueWithOverwrite);
-			ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+			walkQ = WALKING_WAV;
+			xQueueReset(xWalkQueue);
+			xQueueSend(xWalkQueue, (void *) &walkQ, 0);
 			write(sd, ack_msg, strlen(ack_msg));
+			xil_printf("WALKING_WAV\r\n");
 			break;
 		case WALKING_RIPP:
-			xTaskNotify(xWalkingTask, WALKING_RIPP, eSetValueWithOverwrite);
-			ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+			walkQ = WALKING_RIPP;
+			xQueueReset(xWalkQueue);
+			xQueueSend(xWalkQueue, (void *) &walkQ, 0);
 			write(sd, ack_msg, strlen(ack_msg));
+			xil_printf("WALKING_RIPP\r\n");
 			break;
 		case WALKING_TRI:
-			xTaskNotify(xWalkingTask, WALKING_TRI, eSetValueWithOverwrite);
-			ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+			walkQ = WALKING_TRI;
+			xQueueReset(xWalkQueue);
+			xQueueSend(xWalkQueue, (void *) &walkQ, 0);
 			write(sd, ack_msg, strlen(ack_msg));
+			xil_printf("WALKING_TRI\r\n");
 			break;
 		}
 	}
@@ -175,17 +189,10 @@ static void remote_application_thread(void *p)
 
 	while (1) {
 		if ((new_sd = lwip_accept(sock, (struct sockaddr *)&remote, (socklen_t *)&size)) > 0) {
-			if(xRemoteNetworkTask != NULL){
-				vTaskDelete(xRemoteNetworkTask);
-				xRemoteNetworkTask = NULL;
-			}
-
-			if(xRemoteNetworkTask == NULL){
-				xRemoteNetworkTask = sys_thread_new("ClientHandler", process_request,
-								(void*)new_sd,
-								THREAD_STACKSIZE,
-								DEFAULT_THREAD_PRIO);
-			}
+			xRemoteNetworkTask = sys_thread_new("ClientHandler", process_request,
+					(void*)new_sd,
+					THREAD_STACKSIZE,
+					DEFAULT_THREAD_PRIO);
 		}
 	}
 }

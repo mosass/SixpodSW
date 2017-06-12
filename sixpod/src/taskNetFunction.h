@@ -136,6 +136,16 @@ static void process_request(void *p)
 	vTaskDelete(NULL);
 }
 
+static char header[] =
+		"yaw,pitch,roll,"
+		"x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,x5,y5,z5,x6,y6,z6,"
+		"ta1,tb1,tc1,ta2,tb2,tc2,ta3,tb3,tc3,ta4,tb4,tc4,ta5,tb5,tc5,ta6,tb6,tc6,"
+		"qa1,qb1,qc1,qa2,qb2,qc2,qa3,qb3,qc3,qa4,qb4,qc4,qa5,qb5,qc5,qa6,qb6,qc6,"
+		"la1,lb1,lc1,la2,lb2,lc2,la3,lb3,lc3,la4,lb4,lc4,la5,lb5,lc5,la6,lb6,lc6,"
+		"tsa1,tsb1,tsc1,tsa2,tsb2,tsc2,tsa3,tsb3,tsc3,tsa4,tsb4,tsc4,tsa5,tsb5,tsc5,tsa6,tsb6,tsc6,"
+		"sa1,sb1,sc1,sa2,sb2,sc2,sa3,sb3,sc3,sa4,sb4,sc4,sa5,sb5,sc5,sa6,sb6,sc6"
+	;
+
 // logs Server
 static void process_logs_request(void *p)
 {
@@ -145,13 +155,7 @@ static void process_logs_request(void *p)
 	int nwrote;
 	TickType_t st = pdMS_TO_TICKS( 100 );
 
-	sprintf(send_buf,
-		"yaw,pitch,roll,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\r\n",
-		"x1,y1,z1", "x2,y2,z2", "x3,y3,z3", "x4,y4,z4", "x5,y5,z5", "x6,y6,z6",
-		"ta1,tb1,tc1", "ta2,tb2,tc2", "ta3,tb3,tc3", "ta4,tb4,tc4", "ta5,tb5,tc5", "ta6,tb6,tc6",
-		"qa1,qb1,qc1", "qa2,qb2,qc2", "qa3,qb3,qc3", "qa4,qb4,qc4", "qa5,qb5,qc5", "qa6,qb6,qc6",
-		"la1,lb1,lc1", "la2,lb2,lc2", "la3,lb3,lc3", "la4,lb4,lc4", "la5,lb5,lc5", "la6,lb6,lc6"
-	);
+	sprintf(send_buf, "%s\r\n", header);
 
 	n_cnt = strlen(send_buf);
 
@@ -229,6 +233,34 @@ static void process_logs_request(void *p)
 			pStr += strlen(pStr);
 
 			sprintf(pStr, "%d,", JointGetLoad(Hexapod.leg[i].jointIdC));
+			pStr += strlen(pStr);
+		}
+
+		for(int i = 0; i < 6; i++){
+			ftostr(strfval, Hexapod.leg[i].linkSpeed.a);
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+
+			ftostr(strfval, Hexapod.leg[i].linkSpeed.b);
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+
+			ftostr(strfval, Hexapod.leg[i].linkSpeed.c);
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+		}
+
+		for(int i = 0; i < 6; i++){
+			ftostr(strfval, JointGetPresentSpeedDeg(Hexapod.leg[i].jointIdA));
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+
+			ftostr(strfval, JointGetPresentSpeedDeg(Hexapod.leg[i].jointIdB));
+			sprintf(pStr, "%s,", strfval);
+			pStr += strlen(pStr);
+
+			ftostr(strfval, JointGetPresentSpeedDeg(Hexapod.leg[i].jointIdC));
+			sprintf(pStr, "%s,", strfval);
 			pStr += strlen(pStr);
 		}
 

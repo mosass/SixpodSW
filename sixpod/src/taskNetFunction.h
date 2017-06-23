@@ -251,15 +251,15 @@ static void process_logs_request(void *p)
 		}
 
 		for(int i = 0; i < 6; i++){
-			ftostr(strfval, JointGetPresentSpeedDeg(Hexapod.leg[i].jointIdA));
+			ftostr(strfval, JointGetPresentSpeedRPM(Hexapod.leg[i].jointIdA));
 			sprintf(pStr, "%s,", strfval);
 			pStr += strlen(pStr);
 
-			ftostr(strfval, JointGetPresentSpeedDeg(Hexapod.leg[i].jointIdB));
+			ftostr(strfval, JointGetPresentSpeedRPM(Hexapod.leg[i].jointIdB));
 			sprintf(pStr, "%s,", strfval);
 			pStr += strlen(pStr);
 
-			ftostr(strfval, JointGetPresentSpeedDeg(Hexapod.leg[i].jointIdC));
+			ftostr(strfval, JointGetPresentSpeedRPM(Hexapod.leg[i].jointIdC));
 			sprintf(pStr, "%s,", strfval);
 			pStr += strlen(pStr);
 		}
